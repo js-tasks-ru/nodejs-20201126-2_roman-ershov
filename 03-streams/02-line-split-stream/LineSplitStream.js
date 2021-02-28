@@ -11,13 +11,15 @@ class LineSplitStream extends Transform {
   _transform(chunk, encoding, callback) {
     const lines = chunk.toString().split(EOL);
 
-    this._storageLines[0] = (this._storageLines[0] || '') + lines[0];
+    this._storageLines[Math.max(this._storageLines.length - 1, 0)] = (
+      (this._storageLines[this._storageLines.length - 1] || '') + lines[0]
+    );
+    this._storageLines = [...this._storageLines, ...lines.slice(1)];
 
-    if (lines.length === 1) {
-      callback();
+    if (this._storageLines.length > 1) {
+      callback(null, this._storageLines.shift());
     } else {
-      callback(null, this._storageLines[0]);
-      this._storageLines = lines.slice(1);
+      callback();
     }
   }
 
