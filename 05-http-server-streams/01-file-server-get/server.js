@@ -13,13 +13,23 @@ server.on('request', (req, res) => {
     case 'GET':
       let readStream = createReadStream(filepath);
 
-      readStream.on('error', () => {
+      readStream.on('error', (error) => {
         if (pathname.includes('/')) {
           res.statusCode = 400;
-        } else {
+          res.end('Nested paths are not allowed');
+        } else if (error.code === 'ENOENT') {
           res.statusCode = 404;
+          res.end('File not found');
+        } else {
+          res.statusCode = 500;
+          res.end('Internal server error');
         }
 
+        res.on('close', () => {
+          if (!res.finished) {
+            readStream.destroy();
+          }
+        });
         res.end();
       });
 
