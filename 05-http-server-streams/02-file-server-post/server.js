@@ -1,7 +1,7 @@
 const url = require('url');
 const http = require('http');
 const path = require('path');
-const {createWriteStream, unlink, access, constants} = require('fs');
+const {createWriteStream, unlink} = require('fs');
 const LimitSizeStream = require('./LimitSizeStream');
 
 const server = new http.Server();
@@ -11,9 +11,6 @@ server.on('request', (req, res) => {
   const filepath = path.join(__dirname, 'files', pathname);
 
   switch (req.method) {
-    case 'GET':
-      res.end('dog');
-      break;
     case 'POST':
       const writeStream = createWriteStream(filepath, {flags: 'wx'});
       const limitStream = new LimitSizeStream({limit: 2 ** 20});
@@ -25,14 +22,12 @@ server.on('request', (req, res) => {
       });
 
       writeStream.on('close', () => {
-        console.log('write stream close');
         res.statusCode = 201;
         res.end();
       });
 
       writeStream.on('error', (error) => {
         if (error.code === 'EEXIST') {
-          console.log('EEXIST');
           res.statusCode = 409;
           res.end('File already exists');
         } else if (error.code === 'ENOENT') {
