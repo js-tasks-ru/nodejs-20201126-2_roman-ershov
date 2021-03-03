@@ -15,25 +15,32 @@ server.on('request', (req, res) => {
       const writeStream = createWriteStream(filepath, {flags: 'wx'});
       const limitStream = new LimitSizeStream({limit: 2 ** 20});
 
-      limitStream.on('error', () => {
-        res.statusCode = 413;
+      limitStream.on('error', (error) => {
+        if (error.code === 'LIMIT_EXCEEDED') {
+          res.statusCode = 413;
+          res.end('Limit has been exceeded');
+        } else {
+          res.statusCode = 500;
+          res.end('Internal server error');
+        }
+
         unlink(filepath, () => {});
-        res.end('Limit has been exceeded');
       });
 
       writeStream.on('close', () => {
         res.statusCode = 201;
-        res.end();
+        res.end('file has been saved');
       });
 
       writeStream.on('error', (error) => {
         if (error.code === 'EEXIST') {
           res.statusCode = 409;
           res.end('File already exists');
-        } else if (error.code === 'ENOENT') {
+        } else if (pathname.includes('/') || pathname.includes('..')) {
           res.statusCode = 400;
           res.end('Nested paths are not allowed');
         } else {
+          unlink(filepath, () => {});
           res.statusCode = 500;
           res.end('Internal server error');
         }
