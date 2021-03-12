@@ -12,6 +12,9 @@ router.get('/subscribe', async (ctx, next) => {
             resolve(message);
          }
       });
+      ctx.res.on('close', () => {
+         resolve();
+      });
    });
 
    ctx.res.statusCode = 200;
