@@ -2,7 +2,7 @@ const Product = require('../models/Product');
 const {ObjectID} = require('mongodb');
 
 module.exports.productsBySubcategory = async function productsBySubcategory(ctx, next) {
-  const subcategoryId = ctx.request.query.subcategory;
+  const subcategoryId = ctx.query.subcategory;
 
   if (subcategoryId) {
     try {
@@ -19,7 +19,7 @@ module.exports.productsBySubcategory = async function productsBySubcategory(ctx,
 };
 
 module.exports.productList = async function productList(ctx, next) {
-  const products = await Product.find();
+  const products = await Product.find().limit(20);
 
   ctx.body = {products};
 };
@@ -27,18 +27,16 @@ module.exports.productList = async function productList(ctx, next) {
 module.exports.productById = async function productById(ctx, next) {
   const productId = ctx.params.id;
 
-  try {
-    const product = await Product.find({_id: ObjectID(productId)});
+  if (!ObjectID.isValid(productId)) {
+    ctx.throw(400, 'invalid product id');
+  } else {
+    const product = await Product.findById(ObjectID(productId));
 
-    if (product.length) {
-      ctx.body = {product: product[0]};
+    if (product) {
+      ctx.body = {product: product};
     } else {
-      ctx.res.statusCode = 404;
-      ctx.res.end();
+      ctx.throw(404, `no product with ${productId} id`);
     }
-  } catch (e) {
-    ctx.res.statusCode = 400;
-    ctx.res.end();
   }
 };
 
